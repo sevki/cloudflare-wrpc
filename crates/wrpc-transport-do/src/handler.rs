@@ -24,9 +24,8 @@ pub trait WrpcHandler {
 }
 
 /// Type alias for handler functions
-pub type HandlerFn = Box<
-    dyn Fn(Bytes) -> Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>> + Send + Sync,
->;
+pub type HandlerFn =
+    Box<dyn Fn(Bytes) -> Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>> + Send + Sync>;
 
 /// Router for dispatching wRPC requests to handlers
 pub struct WrpcRouter {
@@ -66,19 +65,21 @@ impl WrpcRouter {
     {
         let handler = move |params: Bytes| {
             let params: std::result::Result<P, _> = serde_json::from_slice(&params);
-            let fut = match params {
-                Ok(p) => {
-                    let fut = handler(p);
-                    Box::pin(async move {
-                        let result = fut.await?;
-                        WrpcResponse::ok(result)
-                    }) as Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>>
-                }
-                Err(e) => {
-                    Box::pin(async move { Ok(WrpcResponse::error(format!("invalid params: {}", e))) })
-                        as Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>>
-                }
-            };
+            let fut =
+                match params {
+                    Ok(p) => {
+                        let fut = handler(p);
+                        Box::pin(async move {
+                            let result = fut.await?;
+                            WrpcResponse::ok(result)
+                        })
+                            as Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>>
+                    }
+                    Err(e) => Box::pin(async move {
+                        Ok(WrpcResponse::error(format!("invalid params: {}", e)))
+                    })
+                        as Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>>,
+                };
             fut
         };
 
@@ -181,7 +182,11 @@ pub async fn parse_wrpc_request(mut req: Request) -> Result<WrpcRequest> {
     }
 
     // Otherwise, treat body as params directly
-    Ok(WrpcRequest::from_http(&instance, &function, Bytes::from(body)))
+    Ok(WrpcRequest::from_http(
+        &instance,
+        &function,
+        Bytes::from(body),
+    ))
 }
 
 fn extract_from_headers(req: &Request) -> Result<(String, String)> {
@@ -246,4 +251,3 @@ macro_rules! wrpc_router {
         router
     }};
 }
-

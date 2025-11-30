@@ -56,11 +56,7 @@ impl WrpcRequest {
     }
 
     /// Create a request from HTTP headers and body
-    pub fn from_http(
-        instance: &str,
-        function: &str,
-        body: Bytes,
-    ) -> Self {
+    pub fn from_http(instance: &str, function: &str, body: Bytes) -> Self {
         Self {
             instance: instance.to_string(),
             function: function.to_string(),
@@ -134,9 +130,9 @@ impl WrpcResponse {
             WrpcStatus::Ok => {
                 serde_json::from_slice(&self.data).map_err(|e| Error::Serialization(e.to_string()))
             }
-            WrpcStatus::Error => {
-                Err(Error::Protocol(String::from_utf8_lossy(&self.data).to_string()))
-            }
+            WrpcStatus::Error => Err(Error::Protocol(
+                String::from_utf8_lossy(&self.data).to_string(),
+            )),
             WrpcStatus::NotFound => Err(Error::NotFound {
                 instance: String::new(),
                 function: String::new(),
