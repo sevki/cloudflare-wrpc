@@ -27,11 +27,13 @@
 //! ```
 
 mod client;
+mod error;
 mod handler;
 pub mod message;
-mod error;
+pub mod websocket;
 
-pub use client::{DurableObjectClient, ClientBuilder};
-pub use handler::{WrpcHandler, WrpcRouter, is_wrpc_request};
-pub use message::{WrpcRequest, WrpcResponse, WrpcEnvelope};
+pub use client::{ClientBuilder, DurableObjectClient};
 pub use error::{Error, Result};
+pub use handler::{is_wrpc_request, WrpcHandler, WrpcRouter};
+pub use message::{WrpcEnvelope, WrpcRequest, WrpcResponse};
+pub use websocket::{WrpcWebSocket, WrpcWebSocketHandler};

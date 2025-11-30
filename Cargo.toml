@@ -2,7 +2,9 @@
 resolver = "2"
 members = [
     "crates/wrpc-transport-do",
-    "worker"
+    "worker",
+    "examples/pingpong",
+    "examples/websocket-pingpong"
 ]
 
 [workspace.package]
@@ -36,7 +38,7 @@ bytes = { version = "1", features = ["serde"] }
 tracing = { version = "0.1", default-features = false }
 
 # WebAssembly
-wasm-bindgen = "0.2"
+wasm-bindgen = "=0.2.105"
 wasm-bindgen-futures = "0.4"
 js-sys = "0.3"
 web-sys = { version = "0.3", features = [

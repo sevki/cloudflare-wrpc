@@ -1,14 +1,13 @@
 //! wRPC client for invoking functions on Durable Objects
 
-use bytes::Bytes;
 use serde::{de::DeserializeOwned, Serialize};
 use wasm_bindgen::JsValue;
 use worker::durable::Stub;
-use worker::{Request, RequestInit, Method, Headers};
+use worker::{Headers, Method, Request, RequestInit};
 
 use crate::message::{
-    WrpcRequest, WrpcResponse, WrpcEnvelope,
-    WRPC_CONTENT_TYPE, WRPC_INSTANCE_HEADER, WRPC_FUNCTION_HEADER, WRPC_VERSION_HEADER, WRPC_VERSION,
+    WrpcEnvelope, WrpcRequest, WrpcResponse, WRPC_CONTENT_TYPE, WRPC_FUNCTION_HEADER,
+    WRPC_INSTANCE_HEADER, WRPC_VERSION, WRPC_VERSION_HEADER,
 };
 use crate::{Error, Result};
 
@@ -73,8 +72,8 @@ impl DurableObjectClient {
         // Create the request URL (using the wRPC path format)
         let url = format!("https://do.internal{}", request.path());
 
-        let req = Request::new_with_init(&url, &init)
-            .map_err(|e| Error::Transport(e.to_string()))?;
+        let req =
+            Request::new_with_init(&url, &init).map_err(|e| Error::Transport(e.to_string()))?;
 
         // Send to the Durable Object
         let mut response = self.stub.fetch_with_request(req).await?;
@@ -92,23 +91,6 @@ impl DurableObjectClient {
             .map_err(|e| Error::Protocol(format!("invalid response payload: {}", e)))?;
 
         Ok(wrpc_response)
-    }
-
-    /// Invoke a function with raw bytes as parameters
-    pub async fn invoke_bytes(
-        &self,
-        instance: &str,
-        function: &str,
-        params: Bytes,
-    ) -> Result<Bytes> {
-        let request = WrpcRequest::from_http(instance, function, params);
-        let response = self.invoke_raw(request).await?;
-
-        if response.is_ok() {
-            Ok(response.data)
-        } else {
-            Err(Error::Protocol(String::from_utf8_lossy(&response.data).to_string()))
-        }
     }
 }
 
