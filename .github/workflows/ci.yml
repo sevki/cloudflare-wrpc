@@ -121,6 +121,14 @@ jobs:
           name: pingpong-build
           path: examples/pingpong/build/
 
+      - name: Remove build command from wrangler.toml
+        working-directory: examples/pingpong
+        run: |
+          # Remove the [build] section to skip rebuilding (we have pre-built artifacts)
+          sed -i '/^\[build\]/,/^$/d' wrangler.toml
+          echo "Updated wrangler.toml:"
+          cat wrangler.toml
+
       - name: Start wrangler dev and run pingpong tests
         working-directory: examples/pingpong
         run: |
@@ -130,12 +138,12 @@ jobs:
 
           # Wait for wrangler to start
           echo "Waiting for wrangler to start..."
-          for i in {1..60}; do
+          for i in {1..120}; do
             if curl -s http://127.0.0.1:8787/health > /dev/null 2>&1; then
               echo "Wrangler is ready!"
               break
             fi
-            if [ $i -eq 60 ]; then
+            if [ $i -eq 120 ]; then
               echo "Timeout waiting for wrangler"
               kill $WRANGLER_PID 2>/dev/null || true
               exit 1
