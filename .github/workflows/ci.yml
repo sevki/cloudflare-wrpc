@@ -39,14 +39,26 @@ jobs:
       - name: Install worker-build
         run: cargo install worker-build
 
-      - name: Build
+      - name: Build main worker
+        working-directory: worker
         run: worker-build --release
 
-      - name: Upload build artifacts
+      - name: Build pingpong example
+        working-directory: examples/pingpong
+        run: worker-build --release
+
+      - name: Upload main worker artifacts
         uses: actions/upload-artifact@v4
         with:
           name: worker-build
-          path: build/
+          path: worker/build/
+          retention-days: 1
+
+      - name: Upload pingpong example artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pingpong-build
+          path: examples/pingpong/build/
           retention-days: 1
 
   lint:
@@ -80,8 +92,8 @@ jobs:
       - name: Clippy
         run: cargo clippy --all-targets --all-features -- -D warnings
 
-  e2e:
-    name: E2E Tests
+  e2e-pingpong:
+    name: E2E Tests - PingPong
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -100,15 +112,17 @@ jobs:
           version: 8
 
       - name: Install dependencies
+        working-directory: examples/pingpong
         run: pnpm install
 
-      - name: Download build artifacts
+      - name: Download pingpong artifacts
         uses: actions/download-artifact@v4
         with:
-          name: worker-build
-          path: build/
+          name: pingpong-build
+          path: examples/pingpong/build/
 
-      - name: Start wrangler dev and run tests
+      - name: Start wrangler dev and run pingpong tests
+        working-directory: examples/pingpong
         run: |
           # Start wrangler dev in background with local mode
           pnpm dlx wrangler dev --local &
@@ -129,12 +143,39 @@ jobs:
             sleep 1
           done
 
-          # Run the e2e tests
-          node tests/e2e.mjs
-          TEST_EXIT_CODE=$?
+          # Test the ping endpoint (DO-to-DO wRPC communication)
+          echo "Testing /ping/alice/bob endpoint..."
+          RESPONSE=$(curl -s http://127.0.0.1:8787/ping/alice/bob)
+          echo "Response: $RESPONSE"
+
+          # Check that the response contains expected fields
+          if echo "$RESPONSE" | grep -q '"from":"bob"'; then
+            echo "✓ Response contains 'from: bob'"
+          else
+            echo "✗ Response missing expected 'from: bob'"
+            kill $WRANGLER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          if echo "$RESPONSE" | grep -q '"message":"pong!"'; then
+            echo "✓ Response contains 'message: pong!'"
+          else
+            echo "✗ Response missing expected 'message: pong!'"
+            kill $WRANGLER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          if echo "$RESPONSE" | grep -q '"from":"alice"'; then
+            echo "✓ Received ping shows it came from 'alice'"
+          else
+            echo "✗ Response missing expected sender 'alice'"
+            kill $WRANGLER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          echo ""
+          echo "All tests passed!"
 
           # Stop wrangler
           kill $WRANGLER_PID 2>/dev/null || true
-
-          exit $TEST_EXIT_CODE
         timeout-minutes: 10

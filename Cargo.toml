@@ -2,7 +2,8 @@
 resolver = "2"
 members = [
     "crates/wrpc-transport-do",
-    "worker"
+    "worker",
+    "examples/pingpong"
 ]
 
 [workspace.package]
