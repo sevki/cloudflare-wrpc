@@ -6,7 +6,7 @@
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "build": "wrangler build",
-    "test": "node ../../tests/websocket-test.mjs"
+    "test": "node test.mjs"
   },
   "devDependencies": {
     "wrangler": "^3",

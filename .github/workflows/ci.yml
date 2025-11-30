@@ -260,7 +260,7 @@ jobs:
 
           # Run the WebSocket test
           echo "Running WebSocket test..."
-          node ../../tests/websocket-test.mjs
+          node test.mjs
           TEST_EXIT_CODE=$?
 
           # Stop wrangler
