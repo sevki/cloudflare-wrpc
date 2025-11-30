@@ -189,9 +189,16 @@ async fn main(req: Request, env: Env, _ctx: Context) -> Result<Response> {
         let set_name_url = format!("https://do/set-name/{}", name);
         stub.fetch_with_str(&set_name_url).await.ok();
 
-        // Forward the WebSocket upgrade request
-        let url = "https://do/ws";
-        let ws_req = Request::new(url, Method::Get)?;
+        // Forward the WebSocket upgrade request with proper headers
+        let headers = Headers::new();
+        headers.set("Upgrade", "websocket")?;
+        headers.set("Connection", "Upgrade")?;
+
+        let mut init = RequestInit::new();
+        init.with_method(Method::Get);
+        init.with_headers(headers);
+
+        let ws_req = Request::new_with_init("https://do/ws", &init)?;
         return stub.fetch_with_request(ws_req).await;
     }
 
