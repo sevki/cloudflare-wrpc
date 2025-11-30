@@ -1,0 +1,6 @@
+[submodule "vendor/workers-rs"]
+	path = vendor/workers-rs
+	url = https://github.com/cloudflare/workers-rs.git
+[submodule "vendor/wrpc"]
+	path = vendor/wrpc
+	url = https://github.com/bytecodealliance/wrpc.git

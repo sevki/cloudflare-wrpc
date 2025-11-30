@@ -1,0 +1,22 @@
+[package]
+name = "cloudflare-wrpc-worker"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Example Cloudflare Worker demonstrating wRPC communication between Durable Objects"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+wrpc-transport-do = { path = "../crates/wrpc-transport-do" }
+worker.workspace = true
+worker-macros.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+wasm-bindgen.workspace = true
+futures.workspace = true
+console_error_panic_hook = "0.1"
+
+[dev-dependencies]

@@ -1,0 +1,16 @@
+{
+  "name": "cloudflare-wrpc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "wRPC transport for Cloudflare Durable Objects",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "cargo install worker-build && worker-build --release",
+    "deploy": "wrangler deploy",
+    "test": "pnpm run build && pnpm run test:e2e",
+    "test:e2e": "node tests/e2e.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}

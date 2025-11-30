@@ -1,0 +1,29 @@
+name = "cloudflare-wrpc-worker"
+workers_dev = true
+compatibility_date = "2024-01-01"
+main = "build/worker/shim.mjs"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"
+
+# Durable Object bindings
+[durable_objects]
+bindings = [
+    { name = "COUNTER_SERVICE", class_name = "CounterService" },
+    { name = "ORCHESTRATOR_SERVICE", class_name = "OrchestratorService" }
+]
+
+# Durable Object migrations
+[[migrations]]
+tag = "v1"
+new_classes = ["CounterService", "OrchestratorService"]
+
+# Development settings
+[dev]
+ip = "127.0.0.1"
+port = 8787
+local_protocol = "http"
+
+# Environment variables (can be overridden)
+[vars]
+ENVIRONMENT = "development"
