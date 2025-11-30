@@ -47,6 +47,10 @@ jobs:
         working-directory: examples/pingpong
         run: worker-build --release
 
+      - name: Build websocket-pingpong example
+        working-directory: examples/websocket-pingpong
+        run: worker-build --release
+
       - name: Upload main worker artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -59,6 +63,13 @@ jobs:
         with:
           name: pingpong-build
           path: examples/pingpong/build/
+          retention-days: 1
+
+      - name: Upload websocket-pingpong example artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: websocket-pingpong-build
+          path: examples/websocket-pingpong/build/
           retention-days: 1
 
   lint:
@@ -93,7 +104,7 @@ jobs:
         run: cargo clippy --all-targets --all-features -- -D warnings
 
   e2e-pingpong:
-    name: E2E Tests - PingPong
+    name: E2E Tests - PingPong (HTTP)
     runs-on: ubuntu-latest
     needs: build
     steps:
@@ -186,4 +197,74 @@ jobs:
 
           # Stop wrangler
           kill $WRANGLER_PID 2>/dev/null || true
+        timeout-minutes: 10
+
+  e2e-websocket:
+    name: E2E Tests - WebSocket
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Install dependencies
+        working-directory: examples/websocket-pingpong
+        run: pnpm install
+
+      - name: Download websocket-pingpong artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: websocket-pingpong-build
+          path: examples/websocket-pingpong/build/
+
+      - name: Remove build command from wrangler.toml
+        working-directory: examples/websocket-pingpong
+        run: |
+          # Remove the [build] section to skip rebuilding (we have pre-built artifacts)
+          sed -i '/^\[build\]/,/^$/d' wrangler.toml
+          echo "Updated wrangler.toml:"
+          cat wrangler.toml
+
+      - name: Start wrangler dev and run websocket tests
+        working-directory: examples/websocket-pingpong
+        run: |
+          # Start wrangler dev in background with local mode
+          pnpm dlx wrangler dev --local &
+          WRANGLER_PID=$!
+
+          # Wait for wrangler to start
+          echo "Waiting for wrangler to start..."
+          for i in {1..120}; do
+            if curl -s http://127.0.0.1:8787/health > /dev/null 2>&1; then
+              echo "Wrangler is ready!"
+              break
+            fi
+            if [ $i -eq 120 ]; then
+              echo "Timeout waiting for wrangler"
+              kill $WRANGLER_PID 2>/dev/null || true
+              exit 1
+            fi
+            sleep 1
+          done
+
+          # Run the WebSocket test
+          echo "Running WebSocket test..."
+          node ../../tests/websocket-test.mjs
+          TEST_EXIT_CODE=$?
+
+          # Stop wrangler
+          kill $WRANGLER_PID 2>/dev/null || true
+
+          exit $TEST_EXIT_CODE
         timeout-minutes: 10

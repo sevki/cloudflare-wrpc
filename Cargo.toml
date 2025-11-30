@@ -3,7 +3,8 @@ resolver = "2"
 members = [
     "crates/wrpc-transport-do",
     "worker",
-    "examples/pingpong"
+    "examples/pingpong",
+    "examples/websocket-pingpong"
 ]
 
 [workspace.package]
