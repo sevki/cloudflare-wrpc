@@ -1,6 +1,5 @@
 //! wRPC client for invoking functions on Durable Objects
 
-use bytes::Bytes;
 use serde::{de::DeserializeOwned, Serialize};
 use wasm_bindgen::JsValue;
 use worker::durable::Stub;
@@ -92,25 +91,6 @@ impl DurableObjectClient {
             .map_err(|e| Error::Protocol(format!("invalid response payload: {}", e)))?;
 
         Ok(wrpc_response)
-    }
-
-    /// Invoke a function with raw bytes as parameters
-    pub async fn invoke_bytes(
-        &self,
-        instance: &str,
-        function: &str,
-        params: Bytes,
-    ) -> Result<Bytes> {
-        let request = WrpcRequest::from_http(instance, function, params);
-        let response = self.invoke_raw(request).await?;
-
-        if response.is_ok() {
-            Ok(response.data)
-        } else {
-            Err(Error::Protocol(
-                String::from_utf8_lossy(&response.data).to_string(),
-            ))
-        }
     }
 }
 

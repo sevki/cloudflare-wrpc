@@ -4,7 +4,6 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
 
-use bytes::Bytes;
 use serde::{de::DeserializeOwned, Serialize};
 use worker::{Request, Response};
 
@@ -24,8 +23,11 @@ pub trait WrpcHandler {
 }
 
 /// Type alias for handler functions
-pub type HandlerFn =
-    Box<dyn Fn(Bytes) -> Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>> + Send + Sync>;
+pub type HandlerFn = Box<
+    dyn Fn(serde_json::Value) -> Pin<Box<dyn Future<Output = Result<WrpcResponse>> + Send>>
+        + Send
+        + Sync,
+>;
 
 /// Router for dispatching wRPC requests to handlers
 pub struct WrpcRouter {
@@ -63,8 +65,8 @@ impl WrpcRouter {
         F: Fn(P) -> Fut + Send + Sync + 'static,
         Fut: Future<Output = Result<R>> + Send + 'static,
     {
-        let handler = move |params: Bytes| {
-            let params: std::result::Result<P, _> = serde_json::from_slice(&params);
+        let handler = move |params: serde_json::Value| {
+            let params: std::result::Result<P, _> = serde_json::from_value(params);
             let fut =
                 match params {
                     Ok(p) => {
@@ -182,11 +184,7 @@ pub async fn parse_wrpc_request(mut req: Request) -> Result<WrpcRequest> {
     }
 
     // Otherwise, treat body as params directly
-    Ok(WrpcRequest::from_http(
-        &instance,
-        &function,
-        Bytes::from(body),
-    ))
+    WrpcRequest::from_http(&instance, &function, &body)
 }
 
 fn extract_from_headers(req: &Request) -> Result<(String, String)> {
